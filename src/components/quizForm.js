@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import Card from 'react-bootstrap/Card';
+import jobsDB from '../jobsDB';
 
 import Accordion from 'react-bootstrap/Accordion';
 import Form from 'react-bootstrap/Form';
@@ -70,26 +71,40 @@ export default class QuizForm extends Component {
 			});
 
 			this.findJob(subjects, hobbies, skills);
+			console.log(this.state);
 		}
 	}
 
 	findJob = (subjects, hobbies, skills) => {
+		let array = subjects.concat(hobbies, skills);
+		let jobMatch = jobsDB[0];
+		let highestScore = 0;
+		jobsDB.forEach(function (obj) {
+			let i = 0;
+			obj.qualities.forEach(function (quality) {
+				if(array.includes(quality))
+					i++;
+			})
+			if(i > highestScore) {
+				highestScore = i;
+				jobMatch = obj;
+			}
+		})
 		this.setState({
 			subjects: subjects,
 				hobbies: hobbies,
 				skills: skills,
 				error: "",
-				jobTitle: "Job 1",
-				jobDesc: "This is what Job 1 does"
+				outputTitle: jobMatch.title,
+				outputDesc: jobMatch.desc
 		});
 
 		this.sendOutput();
 	}
 
 	sendOutput = () => {
-		let { jobTitle, jobDesc } = this.state;
-		this.props.retrieveOutput(jobTitle, jobDesc);
-		console.log("fired");
+		let { outputTitle, outputDesc } = this.state;
+		this.props.retrieveOutput(outputTitle, outputDesc);
 	}
 
     render() {
