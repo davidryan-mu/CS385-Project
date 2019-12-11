@@ -19,11 +19,13 @@ export default class App extends Component {
 		this.setState({
 			jobTitle: jobTitle,
 			jobDesc: jobDesc
-		})
+		});
+		console.log("Parent retrieving output");
 	}
 
 	render() {
 		let { jobTitle, jobDesc} = this.state;
+		console.log(jobTitle);
 		return (
 			<div className="App">
 				<div className="header"><h1>Triton's Career Finder</h1></div>

@@ -19,9 +19,12 @@ export default class QuizForm extends Component {
         }
 	}
 	
+	//EVENT HANDLERS------------------------------------------------------------------------------------------------
 	handleSubjectChange = (e) => {
 		if(this.state.subjects.includes(e.target.value)) {
-			this.state.subjects.pop(e.target.value);
+			let index = this.state.subjects.indexOf(e.target.value);
+			if (index > -1) 
+				this.state.subjects.splice(index, 1);
 		} else {
 			this.state.subjects.push(e.target.value);
 		}
@@ -29,7 +32,9 @@ export default class QuizForm extends Component {
 
 	handleHobbyChange = (e) => {
 		if(this.state.hobbies.includes(e.target.value)) {
-			this.state.hobbies.pop(e.target.value);
+			let index = this.state.hobbies.indexOf(e.target.value);
+			if (index > -1) 
+				this.state.hobbies.splice(index, 1);
 		} else {
 			this.state.hobbies.push(e.target.value);
 		}
@@ -37,7 +42,9 @@ export default class QuizForm extends Component {
 
 	handleSkillChange = (e) => {
 		if(this.state.skills.includes(e.target.value)) {
-			this.state.skills.pop(e.target.value);
+			let index = this.state.skills.indexOf(e.target.value);
+			if (index > -1) 
+				this.state.skills.splice(index, 1);
 		} else {
 			this.state.skills.push(e.target.value);
 		}
@@ -49,13 +56,15 @@ export default class QuizForm extends Component {
 		let skills = this.state.skills;
 
 		if(subjects.length > 2 || hobbies.length > 2 || skills.length > 2) {
+			console.log("more than 2 options");
 			this.setState({
 				subjects: subjects,
 				hobbies: hobbies,
 				skills: skills,
 				error: "Please check you have only selected two options from each list"
 			})
-		} else if(subjects.length === 0 || hobbies.length === 0 || skills.length === 0) {
+		} else if(subjects.length < 2 || hobbies.length < 2 || skills.length < 2) {
+			console.log("less than 2 options");
 			this.setState({
 				subjects: subjects,
 				hobbies: hobbies,
@@ -63,6 +72,7 @@ export default class QuizForm extends Component {
 				error: "Please check you have selected at least two options from each list"
 			})
 		} else {
+			console.log("clear error");
 			this.setState({
 				subjects: subjects,
 				hobbies: hobbies,
@@ -71,32 +81,40 @@ export default class QuizForm extends Component {
 			});
 
 			this.findJob(subjects, hobbies, skills);
-			console.log(this.state);
 		}
 	}
 
+	//JOB FINDING----------------------------------------------------------------------------------------------------
 	findJob = (subjects, hobbies, skills) => {
+		console.log("finding job...");
 		let array = subjects.concat(hobbies, skills);
+		console.log("Concat input: " + array);
 		let jobMatch = jobsDB[0];
 		let highestScore = 0;
 		jobsDB.forEach(function (obj) {
+			console.log("Currently checking: " + obj.title);
 			let i = 0;
 			obj.qualities.forEach(function (quality) {
-				if(array.includes(quality))
+				console.log("quality: " + quality);
+				if(array.includes(quality)) {
 					i++;
+					console.log("Matching quality found. current score:" + i);
+				}
 			})
+			console.log("Highest Score: " + highestScore + " current i value: " + i);
 			if(i > highestScore) {
 				highestScore = i;
 				jobMatch = obj;
+				console.log("More suited match found: " + jobMatch.title)
 			}
 		})
 		this.setState({
 			subjects: subjects,
-				hobbies: hobbies,
-				skills: skills,
-				error: "",
-				outputTitle: jobMatch.title,
-				outputDesc: jobMatch.desc
+			hobbies: hobbies,
+			skills: skills,
+			error: "",
+			outputTitle: jobMatch.title,
+			outputDesc: jobMatch.desc
 		});
 
 		this.sendOutput();
@@ -105,6 +123,7 @@ export default class QuizForm extends Component {
 	sendOutput = () => {
 		let { outputTitle, outputDesc } = this.state;
 		this.props.retrieveOutput(outputTitle, outputDesc);
+		console.log("Sending output");
 	}
 
     render() {
@@ -133,7 +152,7 @@ export default class QuizForm extends Component {
 							<Form.Group controlId="subjectCheckbox">
 								<Form.Check type="checkbox" label="English" value="English" onChange={this.handleSubjectChange} />
 								<Form.Check type="checkbox" label="Maths" value="Maths" onChange={this.handleSubjectChange} />
-								<Form.Check type="checkbox" label="Science Subjects (Biology / Chemistry / Physics)" value="English" onChange={this.handleSubjectChange} />
+								<Form.Check type="checkbox" label="Science Subjects (Biology / Chemistry / Physics)" value="Science Subjects (Biology / Chemistry / Physics)" onChange={this.handleSubjectChange} />
 								<Form.Check type="checkbox" label="Practical Subjects (Construction / Engineering / Design / Technology)"  value="Practical Subjects (Construction / Engineering / Design / Technology)" onChange={this.handleSubjectChange}/>
 								<Form.Check type="checkbox" label="Art" value="Art" onChange={this.handleSubjectChange} />
 								<Form.Check type="checkbox" label="History" value="History" onChange={this.handleSubjectChange} />
@@ -192,6 +211,7 @@ export default class QuizForm extends Component {
 					  </Card>
 					  </Form>
 					</Accordion>
+				<br />
 				<Button variant="primary" onClick={this.handleSubmit}>Submit</Button>
 				<p>{this.state.error !== "" && this.state.error}</p>
 			  </Card.Body>
