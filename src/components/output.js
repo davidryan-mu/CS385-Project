@@ -2,10 +2,6 @@ import React, { Component } from 'react';
 import Card from 'react-bootstrap/Card';
 
 export default class Output extends Component {
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         return (
             <div className="output">

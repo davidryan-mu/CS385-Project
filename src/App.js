@@ -15,17 +15,16 @@ export default class App extends Component {
 		}
 	}
 
+	//Retrieve data from child component to be sent to other child
 	retrieveOutput = (jobTitle, jobDesc) => {
 		this.setState({
 			jobTitle: jobTitle,
 			jobDesc: jobDesc
 		});
-		console.log("Parent retrieving output");
 	}
 
 	render() {
 		let { jobTitle, jobDesc} = this.state;
-		console.log(jobTitle);
 		return (
 			<div className="App">
 				<div className="header"><h1>Triton's Career Finder</h1></div>

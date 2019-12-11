@@ -13,13 +13,15 @@ export default class QuizForm extends Component {
             subjects: [],
 			hobbies: [],
 			skills: [],
-			error: "",
-			outputTitle: "",
-			outputDesc: ""
+			error: ""
         }
 	}
 	
 	//EVENT HANDLERS------------------------------------------------------------------------------------------------
+	/* 	- State reflects selected checkboxes
+		- If value is not in state when clicked, checkbox is being checked, add it
+		- If value exists in state when clicked, checkbox is being unchecked, remove it
+	*/
 	handleSubjectChange = (e) => {
 		if(this.state.subjects.includes(e.target.value)) {
 			let index = this.state.subjects.indexOf(e.target.value);
@@ -50,6 +52,9 @@ export default class QuizForm extends Component {
 		}
 	}
 
+	/*	- Error checking prevents user submitting empty for or selecting too many options
+		- If no errors are present, clear the error field and call the findJob method
+	*/
 	handleSubmit = () => {
 		let subjects = this.state.subjects;
 		let hobbies = this.state.hobbies;
@@ -72,7 +77,6 @@ export default class QuizForm extends Component {
 				error: "Please check you have selected at least two options from each list"
 			})
 		} else {
-			console.log("clear error");
 			this.setState({
 				subjects: subjects,
 				hobbies: hobbies,
@@ -86,44 +90,45 @@ export default class QuizForm extends Component {
 
 	//JOB FINDING----------------------------------------------------------------------------------------------------
 	findJob = (subjects, hobbies, skills) => {
-		console.log("finding job...");
+		//Merge three arrays
 		let array = subjects.concat(hobbies, skills);
-		console.log("Concat input: " + array);
+
+		//Default job to output is first in object array
 		let jobMatch = jobsDB[0];
+
+		//Score counts the amount of qualities from user input that match with a job
 		let highestScore = 0;
+
+		//Go through each job object in object array of jobs
 		jobsDB.forEach(function (obj) {
-			console.log("Currently checking: " + obj.title);
+			//i keeps track of matched qualities on current job, temporary score tracker
 			let i = 0;
+
+			//Go through each quality in the current job
 			obj.qualities.forEach(function (quality) {
-				console.log("quality: " + quality);
 				if(array.includes(quality)) {
+					//Increment i when matching quality is found
 					i++;
-					console.log("Matching quality found. current score:" + i);
 				}
 			})
-			console.log("Highest Score: " + highestScore + " current i value: " + i);
+			
+			/*	- if i is greater than the current highest scoring job
+				- set highestScore to the new higher score
+				- set the job to output as the highest scoring job
+			*/
 			if(i > highestScore) {
 				highestScore = i;
 				jobMatch = obj;
-				console.log("More suited match found: " + jobMatch.title)
 			}
-		})
-		this.setState({
-			subjects: subjects,
-			hobbies: hobbies,
-			skills: skills,
-			error: "",
-			outputTitle: jobMatch.title,
-			outputDesc: jobMatch.desc
 		});
 
-		this.sendOutput();
+		//After all jobs are checked, output highest score job's relevant attributes
+		this.sendOutput(jobMatch.title, jobMatch.desc);
 	}
 
-	sendOutput = () => {
-		let { outputTitle, outputDesc } = this.state;
-		this.props.retrieveOutput(outputTitle, outputDesc);
-		console.log("Sending output");
+	//Send data to parent component
+	sendOutput = (title, desc) => {
+		this.props.retrieveOutput(title, desc);
 	}
 
     render() {
