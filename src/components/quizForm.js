@@ -1,10 +1,11 @@
 import React, { Component } from 'react';
-import Card from 'react-bootstrap/Card';
-import jobsDB from '../jobsDB';
+import fire from '../firebase';
+import NavBar from './navBar';
 
 import Accordion from 'react-bootstrap/Accordion';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
 
 export default class QuizForm extends Component {
     constructor(props) {
@@ -13,14 +14,27 @@ export default class QuizForm extends Component {
             subjects: [],
 			hobbies: [],
 			skills: [],
-			error: ""
+			status: "",
+			isValid: false,
+			jobs: []
         }
 	}
+
+	componentWillMount(){
+        /* Create reference to jobs in Firebase Database */
+        let jobsDBRef = fire.database().ref('jobsDB').orderByKey().limitToLast(100);
+        jobsDBRef.on('child_added', snapshot => {
+          /* Update React state when job is added at Firebase Database */
+          let jobsList = { job: snapshot.val(), id: snapshot.key };
+          this.setState({ jobs: [jobsList].concat(this.state.jobs) });
+        })
+      }
 	
 	//EVENT HANDLERS------------------------------------------------------------------------------------------------
 	/* 	- State reflects selected checkboxes
-		- If value is not in state when clicked, checkbox is being checked, add it
-		- If value exists in state when clicked, checkbox is being unchecked, remove it
+		- If value is not in state when clicked, checkbox is being checked, add it to state
+		- If value exists in state when clicked, checkbox is being unchecked, remove it from state
+		- Send state to error check method
 	*/
 	handleSubjectChange = (e) => {
 		if(this.state.subjects.includes(e.target.value)) {
@@ -29,8 +43,11 @@ export default class QuizForm extends Component {
 				this.state.subjects.splice(index, 1);
 		} else {
 			this.state.subjects.push(e.target.value);
-		}
-	}
+        }
+        
+        this.qualityErrorCheck(this.state);
+    }
+    
 
 	handleHobbyChange = (e) => {
 		if(this.state.hobbies.includes(e.target.value)) {
@@ -39,7 +56,9 @@ export default class QuizForm extends Component {
 				this.state.hobbies.splice(index, 1);
 		} else {
 			this.state.hobbies.push(e.target.value);
-		}
+        }
+        
+        this.qualityErrorCheck(this.state);
 	}
 
 	handleSkillChange = (e) => {
@@ -49,43 +68,41 @@ export default class QuizForm extends Component {
 				this.state.skills.splice(index, 1);
 		} else {
 			this.state.skills.push(e.target.value);
-		}
-	}
-
-	/*	- Error checking prevents user submitting empty for or selecting too many options
-		- If no errors are present, clear the error field and call the findJob method
+        }
+        
+        this.qualityErrorCheck(this.state);
+    }
+	
+	/* 	- ERROR CHECKING FOR CHECKBOX FORM
+		- Take in current state as parameter
+        - If incorrect number of boxes are checked update status message and set validity flag to false
+        - If correct number of boxes are checked update status message and set validity flag to true
 	*/
+    qualityErrorCheck = (state) => {
+		if(state.subjects.length > 2 || state.skills.length > 2 || state.hobbies.length > 2) {
+			this.setState({
+                status: "❌ Please check you have only selected two options from each list",
+                isValid: false
+            });
+		} else if(state.subjects.length < 2 || state.skills.length < 2 || state.hobbies.length < 2) {
+			this.setState({
+                status: "❌ Please check you have selected at least two options from each list",
+                isValid: false
+            });
+		} else {
+            this.setState({
+                status: "✅ This is good!",
+                isValid: true
+            });
+		}
+    }
+
 	handleSubmit = () => {
 		let subjects = this.state.subjects;
 		let hobbies = this.state.hobbies;
 		let skills = this.state.skills;
 
-		if(subjects.length > 2 || hobbies.length > 2 || skills.length > 2) {
-			console.log("more than 2 options");
-			this.setState({
-				subjects: subjects,
-				hobbies: hobbies,
-				skills: skills,
-				error: "Please check you have only selected two options from each list"
-			})
-		} else if(subjects.length < 2 || hobbies.length < 2 || skills.length < 2) {
-			console.log("less than 2 options");
-			this.setState({
-				subjects: subjects,
-				hobbies: hobbies,
-				skills: skills,
-				error: "Please check you have selected at least two options from each list"
-			})
-		} else {
-			this.setState({
-				subjects: subjects,
-				hobbies: hobbies,
-				skills: skills,
-				error: ""
-			});
-
-			this.findJob(subjects, hobbies, skills);
-		}
+		this.findJob(subjects, hobbies, skills);
 	}
 
 	//JOB FINDING----------------------------------------------------------------------------------------------------
@@ -94,18 +111,17 @@ export default class QuizForm extends Component {
 		let array = subjects.concat(hobbies, skills);
 
 		//Default job to output is first in object array
-		let jobMatch = jobsDB[0];
+		let jobMatch = this.state.jobs[0];
 
 		//Score counts the amount of qualities from user input that match with a job
 		let highestScore = 0;
 
 		//Go through each job object in object array of jobs
-		jobsDB.forEach(function (obj) {
+		this.state.jobs.forEach(function (obj) {
 			//i keeps track of matched qualities on current job, temporary score tracker
 			let i = 0;
-
 			//Go through each quality in the current job
-			obj.qualities.forEach(function (quality) {
+			obj.job.qualities.forEach(function (quality) {
 				if(array.includes(quality)) {
 					//Increment i when matching quality is found
 					i++;
@@ -118,7 +134,7 @@ export default class QuizForm extends Component {
 			*/
 			if(i > highestScore) {
 				highestScore = i;
-				jobMatch = obj;
+				jobMatch = obj.job;
 			}
 		});
 
@@ -134,17 +150,20 @@ export default class QuizForm extends Component {
     render() {
         return (
             <div className="form">
-			<Card>
-			  <Card.Header as="h5">Quiz</Card.Header>
+			<NavBar />
+
+			<Card bg="dark" text="white">
+			  <Card.Header as="h5" style={{textAlign: "center"}}>Quiz</Card.Header>
 			  <Card.Body>
-				<Card.Title>Sample header</Card.Title>
-				<Card.Text>
-				  Sample text explaining application
+				<Card.Text style={{textAlign: "left"}}>
+				  This app is designed to assist Leaving Cert students in filling out their CAO or those hoping to change their career path. <br /> 
+				  Fill in the quiz to find out what career path is best suited for you. Enter the qualities that are most suited to you from the checkboxes and then click submit. <br />
+				  Your reccommended career path will appear at the bottom of the screen.
 				</Card.Text>
 				
-				<Accordion style={{textAlign: "left"}}>
+				<Accordion style={{textAlign: "left", text: "black"}}>
 					<Form>
-					  <Card>
+					  <Card bg="dark" text="white">
 						<Card.Header>
 						  <Accordion.Toggle as={Button} variant="link" eventKey="0">
 							Favourite Subjects
@@ -169,7 +188,7 @@ export default class QuizForm extends Component {
 						  </Card.Body>
 						</Accordion.Collapse>
 					  </Card>
-					  <Card>
+					  <Card bg="dark" text="white">
 						<Card.Header>
 						  <Accordion.Toggle as={Button} variant="link" eventKey="1">
 							Hobbies
@@ -192,7 +211,7 @@ export default class QuizForm extends Component {
 						  </Card.Body>
 						</Accordion.Collapse>
 					  </Card>
-					  <Card>
+					  <Card bg="dark" text="white">
 						<Card.Header>
 						  <Accordion.Toggle as={Button} variant="link" eventKey="2">
 							Skills
@@ -216,9 +235,15 @@ export default class QuizForm extends Component {
 					  </Card>
 					  </Form>
 					</Accordion>
+					<p style={{marginTop: "10px"}}>{this.state.status !== "" && this.state.status}</p>
 				<br />
-				<Button variant="primary" onClick={this.handleSubmit}>Submit</Button>
-				<p>{this.state.error !== "" && this.state.error}</p>
+				<div className="text-center">
+				{this.state.isValid  ? 
+                    <Button variant="primary" size="lg" onClick={this.handleSubmit} style={{textAlign: "center", display: "inline-block"}}>Submit</Button>
+                    :
+                    <Button variant="primary" size="lg" disabled style={{textAlign: "center", display: "inline-block"}}>Submit</Button>
+                }
+				</div>
 			  </Card.Body>
 			</Card>
 		</div>

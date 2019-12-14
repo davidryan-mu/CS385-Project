@@ -5,10 +5,10 @@ export default class Output extends Component {
     render() {
         return (
             <div className="output">
-                <Card>
-                    <Card.Header as="h5">Output</Card.Header>
+                <Card bg="dark" text="white">
+                    <Card.Header as="h5" className="text-center">Your Job Match</Card.Header>
                     <Card.Body>
-                        <Card.Title>{this.props.jobTitle}</Card.Title>
+                        <Card.Title className="text-center">{this.props.jobTitle}</Card.Title>
                         <Card.Text>
                             {this.props.jobDesc}
                         </Card.Text>
